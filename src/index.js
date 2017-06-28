@@ -1,4 +1,5 @@
-// 有空就替换一下自己处理了
+// 有空就替换一下moment自己处理了
+// 简单封装，没有解决内联播放
 import moment from 'moment'
 
 function setAttributes(target, props) {
