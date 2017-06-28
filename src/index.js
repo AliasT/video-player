@@ -302,7 +302,7 @@ export default class VVideo {
   }
 
   onloadedmetadata = (evt) => {
-    // ios中添加这一段代码可以让没有封面的视频显示第一帧
+    // 设置currentTime=0可以让没有封面的视频显示第一帧
     evt.target.currentTime = 0
     this.timeFrom = 0
     this.endTime.innerHTML = this._timeTo 
