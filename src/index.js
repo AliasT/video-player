@@ -111,7 +111,7 @@ const cssRules = `
     z-index: 200;
     margin-left: -20px;
     margin-top: -20px;
-    top: calc(50% - 20px);
+    top: 50%;
     width: 20px;
     height: 20px;
     background: rgba(0, 0, 0, .7);
@@ -262,7 +262,6 @@ export default class VVideo {
     // }
 
     // 暂不考虑使用图标
-    this.playButton.innerHTML = this.isplaying ? '暂停' : '播放'
     this.startTime.innerHTML = this._timeFrom
 
     this.current.style.right = this.right + 'px'
@@ -342,6 +341,7 @@ export default class VVideo {
       // 停止播放，触发预览结束事件
       this.userPlay = false
       this.isplaying = false
+      this.video.pause()
       this.onpreviewended({})
     }
   }
