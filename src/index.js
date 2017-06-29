@@ -1,6 +1,10 @@
 // 有空就替换一下moment自己处理了
 // 简单封装，没有解决内联播放
 import moment from 'moment'
+import play from './play.svg'
+import pause from './pause.svg'
+import fullscreen from './fullscreen.svg'
+
 
 function setAttributes(target, props) {
   Object.keys(props).reduce((ret, cur) => {
@@ -40,17 +44,21 @@ const cssRules = `
   
   .video-controls {
     width: 100%;
+    height: 44px;
     display: flex;
     position: absolute;
     z-index: 100;
     bottom: 0;
     left: 0;
-    width: 100%;
     background: rgba(0, 0, 0, .7);
     color: #fff;
     box-sizing: border-box;
     padding: 10px 12px;
+    opacity: 1;
+    transition: opacity 1s;
   }
+
+
 
   .video-status {
     display: flex;
@@ -98,9 +106,25 @@ const cssRules = `
   }
 
   .video-play-control {
-    // position: absolute;
-    // bottom: 0;
-    // left: 0;
+    position: absolute;
+    left: 50%;
+    z-index: 200;
+    margin-left: -20px;
+    margin-top: -20px;
+    top: calc(50% - 20px);
+    width: 20px;
+    height: 20px;
+    background: rgba(0, 0, 0, .7);
+    // box-sizing: border-box;
+    border-radius: 2px;
+    padding: 10px;
+  }
+
+  .video-controls img {
+    width: 20px;
+    height: 20px;
+    // box-sizing: border-box;
+    padding: 2px;
   }
 `
 
@@ -135,21 +159,30 @@ export default class VVideo {
   }
 
   setupControls() {
-    this.playButton = document.createElement('div')
+    this.playButton = document.createElement('img')
+    this.playButton.src = play
     this.playButton.className = 'video-play-control'
     this.playButton.addEventListener('click', () => {
       this.userPlay = true
       // ios中第一次手动触发play方法无效
-      this.isplaying = !this.isplaying
-      if(this.isplaying) this.video.play()
-      else this.video.pause()
+      this.controlsVisible = 1
+      this.isplaying = true
+      this.video.play()
+    })
+
+    this.pauseButton = document.createElement('img')
+    this.pauseButton.src = pause
+    this.pauseButton.className = 'video-pause-control'
+    this.pauseButton.addEventListener('click', () => {
+      this.isplaying = false
+      this.video.pause()
     })
 
     this.timeStatus = document.createElement('div')
     this.timeStatus.className = 'video-status'
 
-    this.fullScreenButton = document.createElement('div')
-    this.fullScreenButton.innerHTML = '全屏'
+    this.fullScreenButton = document.createElement('img')
+    this.fullScreenButton.src = fullscreen
 
     const self = this
     this.fullScreenButton.addEventListener('click', function() {
@@ -187,7 +220,6 @@ export default class VVideo {
     })
 
     this.slider.addEventListener('touchmove', (evt) => {
-      console.log(this.startX)
       const delta = (evt.touches[0].pageX - this.startX) / this.rect.width * this.timeTo
       this.timeFrom = this.startTimeFrom + delta
     })
@@ -205,18 +237,30 @@ export default class VVideo {
 
     this.controls = document.createElement('div')
     this.controls.className = 'video-controls'
+    this.controlsVisible = 0
+    addChild(this.wrapper, this.playButton)
+    addChild(this.controls, this.pauseButton, this.timeStatus, this.fullScreenButton)
 
-    addChild(this.controls, this.playButton, this.timeStatus, this.fullScreenButton)
     this.container.appendChild(this.wrapper)
     addChild(this.wrapper, this.controls)
   }
 
+
+  set controlsVisible (value) {
+    this.playButton.style.opacity = 1 - value
+    this.controls.style.opacity = value
+  }
+
   update = () => {
     requestAnimationFrame(this.update)
-    if(!this.userPlay) {
-      if(this.isplaying) this.video.play()
-      else this.video.pause()
-    }
+    // if(!this.userPlay) {
+    //   if(this.isplaying) {
+    //     this.video.play()
+    //   } else {
+    //     this.video.pause()
+    //   }
+    // }
+
     // 暂不考虑使用图标
     this.playButton.innerHTML = this.isplaying ? '暂停' : '播放'
     this.startTime.innerHTML = this._timeFrom
@@ -309,9 +353,8 @@ export default class VVideo {
     this.endTime.innerHTML = this._timeTo 
   }
 
-  onpause(e) {
-    // const { onpause } = this.options
-    // this.video.onpause = onpause
+  onpause = e =>  {
+    this.controlsVisible = 0
   }
 
   onpreviewended = (evt) => {
