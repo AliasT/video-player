@@ -1,5 +1,7 @@
 // 有空就替换一下moment自己处理了
 // 简单封装，没有解决内联播放
+
+// 状态控制行为
 import moment from 'moment'
 import play from './play.svg'
 import pause from './pause.svg'
@@ -38,7 +40,7 @@ const cssRules = `
   }
 
   .video-wrapper .video {
-    object-fit: null;
+    object-fit: contain;
     width: 100%;
   }
   
@@ -166,6 +168,7 @@ export default class VVideo {
       this.userPlay = true
       // ios中第一次手动触发play方法无效
       this.controlsVisible = 1
+      this.playButtonVisilbe = 0
       this.isplaying = true
       this.video.play()
     })
@@ -174,6 +177,8 @@ export default class VVideo {
     this.pauseButton.src = pause
     this.pauseButton.className = 'video-pause-control'
     this.pauseButton.addEventListener('click', () => {
+      this.controlsVisible = 0
+      this.playButtonVisilbe = 1
       this.isplaying = false
       this.video.pause()
     })
@@ -245,10 +250,25 @@ export default class VVideo {
     addChild(this.wrapper, this.controls)
   }
 
+  set playButtonVisilbe (value) {
+    this.playButton.style.opacity = value
+  }
+
+  get playButtonVisilbe () {
+    return this.playButton.style.opacity
+  }
+
+  get controlsVisible () {
+    return this.controls.style.opacity
+  }
 
   set controlsVisible (value) {
-    this.playButton.style.opacity = 1 - value
     this.controls.style.opacity = value
+    if(value == 1) {
+      setTimeout(() => {
+        this.controls.style.opacity = 0
+      }, 2000)
+    }
   }
 
   update = () => {
@@ -304,6 +324,11 @@ export default class VVideo {
     const { src, poster } = this.options
     this.video = document.createElement('video')
     this.video.className = 'video'
+    this.video.addEventListener('click', (e) => {
+      if(this.playButtonVisilbe == 0) {
+        this.controlsVisible = 1
+      }
+    })
     setAttributes(this.video, {
       // poster,
       src,
@@ -355,6 +380,7 @@ export default class VVideo {
 
   onpause = e =>  {
     this.controlsVisible = 0
+    this.playButtonVisilbe = 1
   }
 
   onpreviewended = (evt) => {
