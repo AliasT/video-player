@@ -1,7 +1,8 @@
 // 有空就替换一下moment自己处理了
 // 简单封装，没有解决内联播放
-
+// 问题的关键不在于controls属性
 // 状态控制行为
+import './index.scss'
 import moment from 'moment'
 import play from './play.svg'
 import pause from './pause.svg'
@@ -32,103 +33,6 @@ function fix(num) {
   return num < 10 ? '0' + num : num
 }
 
-const cssRules = `
-  .video-wrapper {
-    width: 100%;
-    position: relative;
-    font-size: 14px;
-  }
-
-  .video-wrapper .video {
-    object-fit: contain;
-    width: 100%;
-  }
-  
-  .video-controls {
-    width: 100%;
-    height: 44px;
-    display: flex;
-    position: absolute;
-    z-index: 100;
-    bottom: 0;
-    left: 0;
-    background: rgba(0, 0, 0, .7);
-    color: #fff;
-    box-sizing: border-box;
-    padding: 10px 12px;
-    opacity: 1;
-    transition: opacity 1s;
-  }
-
-
-
-  .video-status {
-    display: flex;
-    padding: 0 5px;
-    box-sizing: border-box;
-    align-items: center;
-    flex: 1;
-  }
-  
-  .video-status .total-time {
-    box-sizing: border-box;
-    position: relative;
-    margin: 0 15px;
-    width: 100%;
-    height: 5px;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, .3)
-  }
-  
-  .video-status .current-time {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    display: block;
-    background: #fff;
-  }
-
-  .video-status .time-slider {
-    z-index: 299;
-    border-radius: 50%;
-    position: absolute;
-    width: 15px;
-    height: 15px;
-    top: 50%;
-    background: #fff;
-    transform: translateY(-50%);
-  }
-
-  .video-status .time {
-    display: inline-block;
-    min-width: 32px;
-    font-size: 12px;
-    font-weight: 100;
-  }
-
-  .video-play-control {
-    position: absolute;
-    left: 50%;
-    z-index: 200;
-    margin-left: -20px;
-    margin-top: -20px;
-    top: 50%;
-    width: 20px;
-    height: 20px;
-    background: rgba(0, 0, 0, .7);
-    // box-sizing: border-box;
-    border-radius: 2px;
-    padding: 10px;
-  }
-
-  .video-controls img {
-    width: 20px;
-    height: 20px;
-    // box-sizing: border-box;
-    padding: 2px;
-  }
-`
 
 // 网站自定义的video
 export default class VVideo {
@@ -143,9 +47,8 @@ export default class VVideo {
     this.container = container
     this.options = options
 
-    this.setupStyle()
-    this.setupControls()
     this.setupWrapper()
+    this.setupControls()
     this.setupTime()
     this.setupVideo()
     this.setupSlider()
@@ -153,35 +56,17 @@ export default class VVideo {
     this.update()
   }
 
-  // 有时间再配置成css modules
-  setupStyle() {
-    const style = document.createElement('style')
-    style.innerHTML = cssRules
-    document.getElementsByTagName('head')[0].appendChild(style)
-  }
-
   setupControls() {
     this.playButton = document.createElement('img')
     this.playButton.src = play
     this.playButton.className = 'video-play-control'
-    this.playButton.addEventListener('click', () => {
-      this.userPlay = true
-      // ios中第一次手动触发play方法无效
-      this.controlsVisible = 1
-      this.playButtonVisilbe = 0
-      this.isplaying = true
-      this.video.play()
-    })
+
+    addChild(this.wrapper, this.playButton)
 
     this.pauseButton = document.createElement('img')
     this.pauseButton.src = pause
     this.pauseButton.className = 'video-pause-control'
-    this.pauseButton.addEventListener('click', () => {
-      this.controlsVisible = 0
-      this.playButtonVisilbe = 1
-      this.isplaying = false
-      this.video.pause()
-    })
+
 
     this.timeStatus = document.createElement('div')
     this.timeStatus.className = 'video-status'
@@ -189,11 +74,30 @@ export default class VVideo {
     this.fullScreenButton = document.createElement('img')
     this.fullScreenButton.src = fullscreen
 
-    const self = this
-    this.fullScreenButton.addEventListener('click', function() {
-      if(self.video.requestFullscreen) self.video.requestFullscreen()
-      else if(self.video.webkitEnterFullScreen) self.video.webkitEnterFullScreen()
-      else if(self.video.webkitRequestFullscreen) self.video.webkitRequestFullscreen()
+
+    addChild(this.controls,  this.pauseButton, this.timeStatus, this.fullScreenButton)
+
+    this.playButton.addEventListener('click', () => {
+      this.userPlay = true
+      // ios中第一次手动触发play方法无效
+      this.controlsVisible = 1
+      this.playButtonVisible = 0
+      this.isplaying = true
+      this.video.play()
+    })
+
+
+    this.pauseButton.addEventListener('click', () => {
+      this.controlsVisible = 0
+      this.playButtonVisible = 1
+      this.isplaying = false
+      this.video.pause()
+    })
+
+    this.fullScreenButton.addEventListener('click', () => {
+      if(this.video.requestFullscreen) this.video.requestFullscreen()
+      else if(this.video.webkitEnterFullScreen) this.video.webkitEnterFullScreen()  // ios 11
+      else if(this.video.webkitRequestFullscreen) this.video.webkitRequestFullscreen()
     })
   }
 
@@ -213,9 +117,17 @@ export default class VVideo {
     // 圆形拖动按钮
     this.slider = document.createElement('i')
     this.slider.className = 'time-slider'
-    addChild(this.total, this.current, this.slider)
 
     addChild(this.timeStatus, this.startTime, this.total, this.endTime)
+    addChild(this.total, this.current, this.slider)
+
+
+    // 时间选取
+    this.total.addEventListener('click', (evt) => {
+      this.controlsVisible = 1
+      const current = ((evt.pageX || evt.touches[0].pageX) - this.rect.left) / this.rect.width * this.timeTo
+      this.timeFrom = current
+    })
   }
 
   setupSlider() {
@@ -224,12 +136,14 @@ export default class VVideo {
       this.startTimeFrom = this.timeFrom
     })
 
+    // 拖动选择时间
     this.slider.addEventListener('touchmove', (evt) => {
+      this.controlsVisible = 1
       const delta = (evt.touches[0].pageX - this.startX) / this.rect.width * this.timeTo
       this.timeFrom = this.startTimeFrom + delta
     })
 
-    this.slider.addEventListener('touend', () => {} )
+    // this.slider.addEventListener('touchend', () => {} )
   }
 
   select() {
@@ -243,18 +157,16 @@ export default class VVideo {
     this.controls = document.createElement('div')
     this.controls.className = 'video-controls'
     this.controlsVisible = 0
-    addChild(this.wrapper, this.playButton)
-    addChild(this.controls, this.pauseButton, this.timeStatus, this.fullScreenButton)
-
     this.container.appendChild(this.wrapper)
+
     addChild(this.wrapper, this.controls)
   }
 
-  set playButtonVisilbe (value) {
+  set playButtonVisible (value) {
     this.playButton.style.opacity = value
   }
 
-  get playButtonVisilbe () {
+  get playButtonVisible () {
     return this.playButton.style.opacity
   }
 
@@ -265,9 +177,10 @@ export default class VVideo {
   set controlsVisible (value) {
     this.controls.style.opacity = value
     if(value == 1) {
-      setTimeout(() => {
+      clearTimeout(this.timeout)
+      this.timeout = setTimeout(() => {
         this.controls.style.opacity = 0
-      }, 2000)
+      }, 6000)
     }
   }
 
@@ -280,7 +193,8 @@ export default class VVideo {
     //     this.video.pause()
     //   }
     // }
-
+    this.video.removeAttribute('controls')
+    this.video.controls = false
     // 暂不考虑使用图标
     this.startTime.innerHTML = this._timeFrom
 
@@ -320,12 +234,30 @@ export default class VVideo {
     return VVideo.computeTime(this.timeTo)
   }
 
+  screenchange = e => {
+    alert(e)
+    this.video.pause()
+    this.video.play()
+    // ios 上暂时误解 
+    if('isFullscreen' in document && !document.isFullscreen) {
+      this.video.pause()
+      this.video.controls = false
+      this.video.removeAttribute('controls')
+    } else if('webkitIsFullScreen' in document && !document.webkitIsFullScreen) {
+      this.video.pause()
+      this.video.removeAttribute('controls')
+    }
+  }
+
   setupVideo() {
     const { src, poster } = this.options
     this.video = document.createElement('video')
+    this.wrapper.appendChild(this.video)
+
     this.video.className = 'video'
+    this.video.onfullscreenchange = this.screenchange
     this.video.addEventListener('click', (e) => {
-      if(this.playButtonVisilbe == 0) {
+      if(this.playButtonVisible == 0) {
         this.controlsVisible = 1
       }
     })
@@ -335,10 +267,10 @@ export default class VVideo {
       'webkit-playsinline': true,
       'playsinline': true,
       'preload': 'metadata',
-      'crossOrigin': true,
+      'crossorigin': true,
       // 'controls': 'controls',
     })
-    this.wrapper.appendChild(this.video)
+    this.video.controls = false
   }
 
   setupListeners() {
@@ -373,14 +305,19 @@ export default class VVideo {
 
   onloadedmetadata = (evt) => {
     // 设置currentTime=0可以让没有封面的视频显示第一帧
-    evt.target.currentTime = 0
+    // evt.target.currentTime = 0
     this.timeFrom = 0
-    this.endTime.innerHTML = this._timeTo 
+    this.endTime.innerHTML = this._timeTo
   }
 
   onpause = e =>  {
     this.controlsVisible = 0
-    this.playButtonVisilbe = 1
+    this.playButtonVisible = 1
+    this.video.controls = false
+    this.video.removeAttribute('controls')
+    if(this.timeFrom >= this.timeTo) {
+      this.video.webkitExitFullscreen()
+    }
   }
 
   onpreviewended = (evt) => {

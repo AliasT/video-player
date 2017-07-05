@@ -1896,7 +1896,7 @@ function loadLocale(name) {
             module && module.exports) {
         try {
             oldLocale = globalLocale._abbr;
-            __webpack_require__(119)("./" + name);
+            __webpack_require__(124)("./" + name);
             // because defineLocale currently also sets the global locale, we
             // want to undo that for lazy loaded locales
             getSetGlobalLocale(oldLocale);
@@ -4531,7 +4531,7 @@ return hooks;
 
 })));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(118)(module)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(123)(module)))
 
 /***/ }),
 /* 1 */
@@ -15643,23 +15643,25 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); // 有空就替换一下moment自己处理了
 // 简单封装，没有解决内联播放
-
+// 问题的关键不在于controls属性
 // 状态控制行为
 
+
+__webpack_require__(118);
 
 var _moment = __webpack_require__(0);
 
 var _moment2 = _interopRequireDefault(_moment);
 
-var _play = __webpack_require__(120);
+var _play = __webpack_require__(125);
 
 var _play2 = _interopRequireDefault(_play);
 
-var _pause = __webpack_require__(121);
+var _pause = __webpack_require__(126);
 
 var _pause2 = _interopRequireDefault(_pause);
 
-var _fullscreen = __webpack_require__(122);
+var _fullscreen = __webpack_require__(127);
 
 var _fullscreen2 = _interopRequireDefault(_fullscreen);
 
@@ -15695,8 +15697,6 @@ function fix(num) {
   return num < 10 ? '0' + num : num;
 }
 
-var cssRules = '\n  .video-wrapper {\n    width: 100%;\n    position: relative;\n    font-size: 14px;\n  }\n\n  .video-wrapper .video {\n    object-fit: contain;\n    width: 100%;\n  }\n  \n  .video-controls {\n    width: 100%;\n    height: 44px;\n    display: flex;\n    position: absolute;\n    z-index: 100;\n    bottom: 0;\n    left: 0;\n    background: rgba(0, 0, 0, .7);\n    color: #fff;\n    box-sizing: border-box;\n    padding: 10px 12px;\n    opacity: 1;\n    transition: opacity 1s;\n  }\n\n\n\n  .video-status {\n    display: flex;\n    padding: 0 5px;\n    box-sizing: border-box;\n    align-items: center;\n    flex: 1;\n  }\n  \n  .video-status .total-time {\n    box-sizing: border-box;\n    position: relative;\n    margin: 0 15px;\n    width: 100%;\n    height: 5px;\n    border-radius: 2px;\n    background: rgba(255, 255, 255, .3)\n  }\n  \n  .video-status .current-time {\n    position: absolute;\n    top: 0;\n    left: 0;\n    height: 100%;\n    display: block;\n    background: #fff;\n  }\n\n  .video-status .time-slider {\n    z-index: 299;\n    border-radius: 50%;\n    position: absolute;\n    width: 15px;\n    height: 15px;\n    top: 50%;\n    background: #fff;\n    transform: translateY(-50%);\n  }\n\n  .video-status .time {\n    display: inline-block;\n    min-width: 32px;\n    font-size: 12px;\n    font-weight: 100;\n  }\n\n  .video-play-control {\n    position: absolute;\n    left: 50%;\n    z-index: 200;\n    margin-left: -20px;\n    margin-top: -20px;\n    top: 50%;\n    width: 20px;\n    height: 20px;\n    background: rgba(0, 0, 0, .7);\n    // box-sizing: border-box;\n    border-radius: 2px;\n    padding: 10px;\n  }\n\n  .video-controls img {\n    width: 20px;\n    height: 20px;\n    // box-sizing: border-box;\n    padding: 2px;\n  }\n';
-
 // 网站自定义的video
 
 var VVideo = function () {
@@ -15719,12 +15719,28 @@ var VVideo = function () {
       //     this.video.pause()
       //   }
       // }
-
+      _this.video.removeAttribute('controls');
+      _this.video.controls = false;
       // 暂不考虑使用图标
       _this.startTime.innerHTML = _this._timeFrom;
 
       _this.current.style.right = _this.right + 'px';
       _this.slider.style.left = _this.left - 10 + 'px';
+    };
+
+    this.screenchange = function (e) {
+      alert(e);
+      _this.video.pause();
+      _this.video.play();
+      // ios 上暂时误解 
+      if ('isFullscreen' in document && !document.isFullscreen) {
+        _this.video.pause();
+        _this.video.controls = false;
+        _this.video.removeAttribute('controls');
+      } else if ('webkitIsFullScreen' in document && !document.webkitIsFullScreen) {
+        _this.video.pause();
+        _this.video.removeAttribute('controls');
+      }
     };
 
     this.ontimeupdate = function (evt) {
@@ -15744,14 +15760,19 @@ var VVideo = function () {
 
     this.onloadedmetadata = function (evt) {
       // 设置currentTime=0可以让没有封面的视频显示第一帧
-      evt.target.currentTime = 0;
+      // evt.target.currentTime = 0
       _this.timeFrom = 0;
       _this.endTime.innerHTML = _this._timeTo;
     };
 
     this.onpause = function (e) {
       _this.controlsVisible = 0;
-      _this.playButtonVisilbe = 1;
+      _this.playButtonVisible = 1;
+      _this.video.controls = false;
+      _this.video.removeAttribute('controls');
+      if (_this.timeFrom >= _this.timeTo) {
+        _this.video.webkitExitFullscreen();
+      }
     };
 
     this.onpreviewended = function (evt) {};
@@ -15759,9 +15780,8 @@ var VVideo = function () {
     this.container = container;
     this.options = options;
 
-    this.setupStyle();
-    this.setupControls();
     this.setupWrapper();
+    this.setupControls();
     this.setupTime();
     this.setupVideo();
     this.setupSlider();
@@ -15769,17 +15789,7 @@ var VVideo = function () {
     this.update();
   }
 
-  // 有时间再配置成css modules
-
-
   _createClass(VVideo, [{
-    key: 'setupStyle',
-    value: function setupStyle() {
-      var style = document.createElement('style');
-      style.innerHTML = cssRules;
-      document.getElementsByTagName('head')[0].appendChild(style);
-    }
-  }, {
     key: 'setupControls',
     value: function setupControls() {
       var _this2 = this;
@@ -15787,24 +15797,12 @@ var VVideo = function () {
       this.playButton = document.createElement('img');
       this.playButton.src = _play2.default;
       this.playButton.className = 'video-play-control';
-      this.playButton.addEventListener('click', function () {
-        _this2.userPlay = true;
-        // ios中第一次手动触发play方法无效
-        _this2.controlsVisible = 1;
-        _this2.playButtonVisilbe = 0;
-        _this2.isplaying = true;
-        _this2.video.play();
-      });
+
+      addChild(this.wrapper, this.playButton);
 
       this.pauseButton = document.createElement('img');
       this.pauseButton.src = _pause2.default;
       this.pauseButton.className = 'video-pause-control';
-      this.pauseButton.addEventListener('click', function () {
-        _this2.controlsVisible = 0;
-        _this2.playButtonVisilbe = 1;
-        _this2.isplaying = false;
-        _this2.video.pause();
-      });
 
       this.timeStatus = document.createElement('div');
       this.timeStatus.className = 'video-status';
@@ -15812,14 +15810,34 @@ var VVideo = function () {
       this.fullScreenButton = document.createElement('img');
       this.fullScreenButton.src = _fullscreen2.default;
 
-      var self = this;
+      addChild(this.controls, this.pauseButton, this.timeStatus, this.fullScreenButton);
+
+      this.playButton.addEventListener('click', function () {
+        _this2.userPlay = true;
+        // ios中第一次手动触发play方法无效
+        _this2.controlsVisible = 1;
+        _this2.playButtonVisible = 0;
+        _this2.isplaying = true;
+        _this2.video.play();
+      });
+
+      this.pauseButton.addEventListener('click', function () {
+        _this2.controlsVisible = 0;
+        _this2.playButtonVisible = 1;
+        _this2.isplaying = false;
+        _this2.video.pause();
+      });
+
       this.fullScreenButton.addEventListener('click', function () {
-        if (self.video.requestFullscreen) self.video.requestFullscreen();else if (self.video.webkitEnterFullScreen) self.video.webkitEnterFullScreen();else if (self.video.webkitRequestFullscreen) self.video.webkitRequestFullscreen();
+        if (_this2.video.requestFullscreen) _this2.video.requestFullscreen();else if (_this2.video.webkitEnterFullScreen) _this2.video.webkitEnterFullScreen(); // ios 11
+        else if (_this2.video.webkitRequestFullscreen) _this2.video.webkitRequestFullscreen();
       });
     }
   }, {
     key: 'setupTime',
     value: function setupTime() {
+      var _this3 = this;
+
       this.startTime = document.createElement('span');
       this.endTime = document.createElement('span');
 
@@ -15835,26 +15853,35 @@ var VVideo = function () {
       // 圆形拖动按钮
       this.slider = document.createElement('i');
       this.slider.className = 'time-slider';
-      addChild(this.total, this.current, this.slider);
 
       addChild(this.timeStatus, this.startTime, this.total, this.endTime);
+      addChild(this.total, this.current, this.slider);
+
+      // 时间选取
+      this.total.addEventListener('click', function (evt) {
+        _this3.controlsVisible = 1;
+        var current = ((evt.pageX || evt.touches[0].pageX) - _this3.rect.left) / _this3.rect.width * _this3.timeTo;
+        _this3.timeFrom = current;
+      });
     }
   }, {
     key: 'setupSlider',
     value: function setupSlider() {
-      var _this3 = this;
+      var _this4 = this;
 
       this.slider.addEventListener('touchstart', function (evt) {
-        _this3.startX = evt.touches[0].pageX;
-        _this3.startTimeFrom = _this3.timeFrom;
+        _this4.startX = evt.touches[0].pageX;
+        _this4.startTimeFrom = _this4.timeFrom;
       });
 
+      // 拖动选择时间
       this.slider.addEventListener('touchmove', function (evt) {
-        var delta = (evt.touches[0].pageX - _this3.startX) / _this3.rect.width * _this3.timeTo;
-        _this3.timeFrom = _this3.startTimeFrom + delta;
+        _this4.controlsVisible = 1;
+        var delta = (evt.touches[0].pageX - _this4.startX) / _this4.rect.width * _this4.timeTo;
+        _this4.timeFrom = _this4.startTimeFrom + delta;
       });
 
-      this.slider.addEventListener('touend', function () {});
+      // this.slider.addEventListener('touchend', () => {} )
     }
   }, {
     key: 'select',
@@ -15868,26 +15895,27 @@ var VVideo = function () {
       this.controls = document.createElement('div');
       this.controls.className = 'video-controls';
       this.controlsVisible = 0;
-      addChild(this.wrapper, this.playButton);
-      addChild(this.controls, this.pauseButton, this.timeStatus, this.fullScreenButton);
-
       this.container.appendChild(this.wrapper);
+
       addChild(this.wrapper, this.controls);
     }
   }, {
     key: 'setupVideo',
     value: function setupVideo() {
-      var _this4 = this;
+      var _this5 = this;
 
       var _options2 = this.options,
           src = _options2.src,
           poster = _options2.poster;
 
       this.video = document.createElement('video');
+      this.wrapper.appendChild(this.video);
+
       this.video.className = 'video';
+      this.video.onfullscreenchange = this.screenchange;
       this.video.addEventListener('click', function (e) {
-        if (_this4.playButtonVisilbe == 0) {
-          _this4.controlsVisible = 1;
+        if (_this5.playButtonVisible == 0) {
+          _this5.controlsVisible = 1;
         }
       });
       setAttributes(this.video, {
@@ -15896,10 +15924,10 @@ var VVideo = function () {
         'webkit-playsinline': true,
         'playsinline': true,
         'preload': 'metadata',
-        'crossOrigin': true
+        'crossorigin': true
         // 'controls': 'controls',
       });
-      this.wrapper.appendChild(this.video);
+      this.video.controls = false;
     }
   }, {
     key: 'setupListeners',
@@ -15909,7 +15937,7 @@ var VVideo = function () {
       this.video.onpause = this.onpause;
     }
   }, {
-    key: 'playButtonVisilbe',
+    key: 'playButtonVisible',
     set: function set(value) {
       this.playButton.style.opacity = value;
     },
@@ -15922,13 +15950,14 @@ var VVideo = function () {
       return this.controls.style.opacity;
     },
     set: function set(value) {
-      var _this5 = this;
+      var _this6 = this;
 
       this.controls.style.opacity = value;
       if (value == 1) {
-        setTimeout(function () {
-          _this5.controls.style.opacity = 0;
-        }, 2000);
+        clearTimeout(this.timeout);
+        this.timeout = setTimeout(function () {
+          _this6.controls.style.opacity = 0;
+        }, 6000);
       }
     }
   }, {
@@ -15992,6 +16021,587 @@ exports.default = VVideo;
 
 /***/ }),
 /* 118 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(119);
+if(typeof content === 'string') content = [[module.i, content, '']];
+// Prepare cssTransformation
+var transform;
+
+var options = {}
+options.transform = transform
+// add the styles to the DOM
+var update = __webpack_require__(121)(content, options);
+if(content.locals) module.exports = content.locals;
+// Hot Module Replacement
+if(false) {
+	// When the styles change, update the <style> tags
+	if(!content.locals) {
+		module.hot.accept("!!../node_modules/css-loader/index.js!../node_modules/sass-loader/lib/loader.js!./index.scss", function() {
+			var newContent = require("!!../node_modules/css-loader/index.js!../node_modules/sass-loader/lib/loader.js!./index.scss");
+			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+			update(newContent);
+		});
+	}
+	// When the module is disposed, remove the <style> tags
+	module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 119 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(120)(undefined);
+// imports
+
+
+// module
+exports.push([module.i, ".video-wrapper {\n  -webkit-appearance: none;\n  width: 100%;\n  position: relative;\n  font-size: 14px; }\n\n.video-wrapper .video {\n  object-fit: contain;\n  width: 100%; }\n\n.video-controls {\n  width: 100%;\n  height: 44px;\n  display: flex;\n  position: absolute;\n  z-index: 100;\n  bottom: 0;\n  left: 0;\n  background: rgba(0, 0, 0, 0.7);\n  color: #fff;\n  box-sizing: border-box;\n  padding: 10px 12px;\n  opacity: 1; }\n\n.video-status {\n  display: flex;\n  padding: 0 5px;\n  box-sizing: border-box;\n  align-items: center;\n  flex: 1; }\n\n.video-status .total-time {\n  box-sizing: border-box;\n  position: relative;\n  margin: 0 15px;\n  width: 100%;\n  height: 5px;\n  border-radius: 2px;\n  background: rgba(255, 255, 255, 0.3); }\n\n.video-status .current-time {\n  position: absolute;\n  top: 0;\n  left: 0;\n  height: 100%;\n  display: block;\n  background: #fff; }\n\n.video-status .time-slider {\n  z-index: 299;\n  border-radius: 50%;\n  position: absolute;\n  width: 15px;\n  height: 15px;\n  top: 50%;\n  background: #fff;\n  transform: translateY(-50%); }\n\n.video-status .time {\n  display: inline-block;\n  min-width: 32px;\n  font-size: 12px;\n  font-weight: 100; }\n\n.video-play-control {\n  position: absolute;\n  left: 50%;\n  z-index: 200;\n  margin-left: -20px;\n  margin-top: -20px;\n  top: 50%;\n  width: 20px;\n  height: 20px;\n  background: rgba(0, 0, 0, 0.7);\n  border-radius: 2px;\n  padding: 10px; }\n\n.video-controls img {\n  width: 20px;\n  height: 20px;\n  padding: 2px; }\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 120 */
+/***/ (function(module, exports) {
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+// css base code, injected by the css-loader
+module.exports = function(useSourceMap) {
+	var list = [];
+
+	// return the list of modules as css string
+	list.toString = function toString() {
+		return this.map(function (item) {
+			var content = cssWithMappingToString(item, useSourceMap);
+			if(item[2]) {
+				return "@media " + item[2] + "{" + content + "}";
+			} else {
+				return content;
+			}
+		}).join("");
+	};
+
+	// import a list of modules into the list
+	list.i = function(modules, mediaQuery) {
+		if(typeof modules === "string")
+			modules = [[null, modules, ""]];
+		var alreadyImportedModules = {};
+		for(var i = 0; i < this.length; i++) {
+			var id = this[i][0];
+			if(typeof id === "number")
+				alreadyImportedModules[id] = true;
+		}
+		for(i = 0; i < modules.length; i++) {
+			var item = modules[i];
+			// skip already imported module
+			// this implementation is not 100% perfect for weird media query combinations
+			//  when a module is imported multiple times with different media queries.
+			//  I hope this will never occur (Hey this way we have smaller bundles)
+			if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
+				if(mediaQuery && !item[2]) {
+					item[2] = mediaQuery;
+				} else if(mediaQuery) {
+					item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
+				}
+				list.push(item);
+			}
+		}
+	};
+	return list;
+};
+
+function cssWithMappingToString(item, useSourceMap) {
+	var content = item[1] || '';
+	var cssMapping = item[3];
+	if (!cssMapping) {
+		return content;
+	}
+
+	if (useSourceMap && typeof btoa === 'function') {
+		var sourceMapping = toComment(cssMapping);
+		var sourceURLs = cssMapping.sources.map(function (source) {
+			return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */'
+		});
+
+		return [content].concat(sourceURLs).concat([sourceMapping]).join('\n');
+	}
+
+	return [content].join('\n');
+}
+
+// Adapted from convert-source-map (MIT)
+function toComment(sourceMap) {
+	// eslint-disable-next-line no-undef
+	var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap))));
+	var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
+
+	return '/*# ' + data + ' */';
+}
+
+
+/***/ }),
+/* 121 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+
+var stylesInDom = {};
+
+var	memoize = function (fn) {
+	var memo;
+
+	return function () {
+		if (typeof memo === "undefined") memo = fn.apply(this, arguments);
+		return memo;
+	};
+};
+
+var isOldIE = memoize(function () {
+	// Test for IE <= 9 as proposed by Browserhacks
+	// @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
+	// Tests for existence of standard globals is to allow style-loader
+	// to operate correctly into non-standard environments
+	// @see https://github.com/webpack-contrib/style-loader/issues/177
+	return window && document && document.all && !window.atob;
+});
+
+var getElement = (function (fn) {
+	var memo = {};
+
+	return function(selector) {
+		if (typeof memo[selector] === "undefined") {
+			memo[selector] = fn.call(this, selector);
+		}
+
+		return memo[selector]
+	};
+})(function (target) {
+	return document.querySelector(target)
+});
+
+var singleton = null;
+var	singletonCounter = 0;
+var	stylesInsertedAtTop = [];
+
+var	fixUrls = __webpack_require__(122);
+
+module.exports = function(list, options) {
+	if (typeof DEBUG !== "undefined" && DEBUG) {
+		if (typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
+	}
+
+	options = options || {};
+
+	options.attrs = typeof options.attrs === "object" ? options.attrs : {};
+
+	// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+	// tags it will allow on a page
+	if (!options.singleton) options.singleton = isOldIE();
+
+	// By default, add <style> tags to the <head> element
+	if (!options.insertInto) options.insertInto = "head";
+
+	// By default, add <style> tags to the bottom of the target
+	if (!options.insertAt) options.insertAt = "bottom";
+
+	var styles = listToStyles(list, options);
+
+	addStylesToDom(styles, options);
+
+	return function update (newList) {
+		var mayRemove = [];
+
+		for (var i = 0; i < styles.length; i++) {
+			var item = styles[i];
+			var domStyle = stylesInDom[item.id];
+
+			domStyle.refs--;
+			mayRemove.push(domStyle);
+		}
+
+		if(newList) {
+			var newStyles = listToStyles(newList, options);
+			addStylesToDom(newStyles, options);
+		}
+
+		for (var i = 0; i < mayRemove.length; i++) {
+			var domStyle = mayRemove[i];
+
+			if(domStyle.refs === 0) {
+				for (var j = 0; j < domStyle.parts.length; j++) domStyle.parts[j]();
+
+				delete stylesInDom[domStyle.id];
+			}
+		}
+	};
+};
+
+function addStylesToDom (styles, options) {
+	for (var i = 0; i < styles.length; i++) {
+		var item = styles[i];
+		var domStyle = stylesInDom[item.id];
+
+		if(domStyle) {
+			domStyle.refs++;
+
+			for(var j = 0; j < domStyle.parts.length; j++) {
+				domStyle.parts[j](item.parts[j]);
+			}
+
+			for(; j < item.parts.length; j++) {
+				domStyle.parts.push(addStyle(item.parts[j], options));
+			}
+		} else {
+			var parts = [];
+
+			for(var j = 0; j < item.parts.length; j++) {
+				parts.push(addStyle(item.parts[j], options));
+			}
+
+			stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
+		}
+	}
+}
+
+function listToStyles (list, options) {
+	var styles = [];
+	var newStyles = {};
+
+	for (var i = 0; i < list.length; i++) {
+		var item = list[i];
+		var id = options.base ? item[0] + options.base : item[0];
+		var css = item[1];
+		var media = item[2];
+		var sourceMap = item[3];
+		var part = {css: css, media: media, sourceMap: sourceMap};
+
+		if(!newStyles[id]) styles.push(newStyles[id] = {id: id, parts: [part]});
+		else newStyles[id].parts.push(part);
+	}
+
+	return styles;
+}
+
+function insertStyleElement (options, style) {
+	var target = getElement(options.insertInto)
+
+	if (!target) {
+		throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
+	}
+
+	var lastStyleElementInsertedAtTop = stylesInsertedAtTop[stylesInsertedAtTop.length - 1];
+
+	if (options.insertAt === "top") {
+		if (!lastStyleElementInsertedAtTop) {
+			target.insertBefore(style, target.firstChild);
+		} else if (lastStyleElementInsertedAtTop.nextSibling) {
+			target.insertBefore(style, lastStyleElementInsertedAtTop.nextSibling);
+		} else {
+			target.appendChild(style);
+		}
+		stylesInsertedAtTop.push(style);
+	} else if (options.insertAt === "bottom") {
+		target.appendChild(style);
+	} else {
+		throw new Error("Invalid value for parameter 'insertAt'. Must be 'top' or 'bottom'.");
+	}
+}
+
+function removeStyleElement (style) {
+	if (style.parentNode === null) return false;
+	style.parentNode.removeChild(style);
+
+	var idx = stylesInsertedAtTop.indexOf(style);
+	if(idx >= 0) {
+		stylesInsertedAtTop.splice(idx, 1);
+	}
+}
+
+function createStyleElement (options) {
+	var style = document.createElement("style");
+
+	options.attrs.type = "text/css";
+
+	addAttrs(style, options.attrs);
+	insertStyleElement(options, style);
+
+	return style;
+}
+
+function createLinkElement (options) {
+	var link = document.createElement("link");
+
+	options.attrs.type = "text/css";
+	options.attrs.rel = "stylesheet";
+
+	addAttrs(link, options.attrs);
+	insertStyleElement(options, link);
+
+	return link;
+}
+
+function addAttrs (el, attrs) {
+	Object.keys(attrs).forEach(function (key) {
+		el.setAttribute(key, attrs[key]);
+	});
+}
+
+function addStyle (obj, options) {
+	var style, update, remove, result;
+
+	// If a transform function was defined, run it on the css
+	if (options.transform && obj.css) {
+	    result = options.transform(obj.css);
+
+	    if (result) {
+	    	// If transform returns a value, use that instead of the original css.
+	    	// This allows running runtime transformations on the css.
+	    	obj.css = result;
+	    } else {
+	    	// If the transform function returns a falsy value, don't add this css.
+	    	// This allows conditional loading of css
+	    	return function() {
+	    		// noop
+	    	};
+	    }
+	}
+
+	if (options.singleton) {
+		var styleIndex = singletonCounter++;
+
+		style = singleton || (singleton = createStyleElement(options));
+
+		update = applyToSingletonTag.bind(null, style, styleIndex, false);
+		remove = applyToSingletonTag.bind(null, style, styleIndex, true);
+
+	} else if (
+		obj.sourceMap &&
+		typeof URL === "function" &&
+		typeof URL.createObjectURL === "function" &&
+		typeof URL.revokeObjectURL === "function" &&
+		typeof Blob === "function" &&
+		typeof btoa === "function"
+	) {
+		style = createLinkElement(options);
+		update = updateLink.bind(null, style, options);
+		remove = function () {
+			removeStyleElement(style);
+
+			if(style.href) URL.revokeObjectURL(style.href);
+		};
+	} else {
+		style = createStyleElement(options);
+		update = applyToTag.bind(null, style);
+		remove = function () {
+			removeStyleElement(style);
+		};
+	}
+
+	update(obj);
+
+	return function updateStyle (newObj) {
+		if (newObj) {
+			if (
+				newObj.css === obj.css &&
+				newObj.media === obj.media &&
+				newObj.sourceMap === obj.sourceMap
+			) {
+				return;
+			}
+
+			update(obj = newObj);
+		} else {
+			remove();
+		}
+	};
+}
+
+var replaceText = (function () {
+	var textStore = [];
+
+	return function (index, replacement) {
+		textStore[index] = replacement;
+
+		return textStore.filter(Boolean).join('\n');
+	};
+})();
+
+function applyToSingletonTag (style, index, remove, obj) {
+	var css = remove ? "" : obj.css;
+
+	if (style.styleSheet) {
+		style.styleSheet.cssText = replaceText(index, css);
+	} else {
+		var cssNode = document.createTextNode(css);
+		var childNodes = style.childNodes;
+
+		if (childNodes[index]) style.removeChild(childNodes[index]);
+
+		if (childNodes.length) {
+			style.insertBefore(cssNode, childNodes[index]);
+		} else {
+			style.appendChild(cssNode);
+		}
+	}
+}
+
+function applyToTag (style, obj) {
+	var css = obj.css;
+	var media = obj.media;
+
+	if(media) {
+		style.setAttribute("media", media)
+	}
+
+	if(style.styleSheet) {
+		style.styleSheet.cssText = css;
+	} else {
+		while(style.firstChild) {
+			style.removeChild(style.firstChild);
+		}
+
+		style.appendChild(document.createTextNode(css));
+	}
+}
+
+function updateLink (link, options, obj) {
+	var css = obj.css;
+	var sourceMap = obj.sourceMap;
+
+	/*
+		If convertToAbsoluteUrls isn't defined, but sourcemaps are enabled
+		and there is no publicPath defined then lets turn convertToAbsoluteUrls
+		on by default.  Otherwise default to the convertToAbsoluteUrls option
+		directly
+	*/
+	var autoFixUrls = options.convertToAbsoluteUrls === undefined && sourceMap;
+
+	if (options.convertToAbsoluteUrls || autoFixUrls) {
+		css = fixUrls(css);
+	}
+
+	if (sourceMap) {
+		// http://stackoverflow.com/a/26603875
+		css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
+	}
+
+	var blob = new Blob([css], { type: "text/css" });
+
+	var oldSrc = link.href;
+
+	link.href = URL.createObjectURL(blob);
+
+	if(oldSrc) URL.revokeObjectURL(oldSrc);
+}
+
+
+/***/ }),
+/* 122 */
+/***/ (function(module, exports) {
+
+
+/**
+ * When source maps are enabled, `style-loader` uses a link element with a data-uri to
+ * embed the css on the page. This breaks all relative urls because now they are relative to a
+ * bundle instead of the current page.
+ *
+ * One solution is to only use full urls, but that may be impossible.
+ *
+ * Instead, this function "fixes" the relative urls to be absolute according to the current page location.
+ *
+ * A rudimentary test suite is located at `test/fixUrls.js` and can be run via the `npm test` command.
+ *
+ */
+
+module.exports = function (css) {
+  // get current location
+  var location = typeof window !== "undefined" && window.location;
+
+  if (!location) {
+    throw new Error("fixUrls requires window.location");
+  }
+
+	// blank or null?
+	if (!css || typeof css !== "string") {
+	  return css;
+  }
+
+  var baseUrl = location.protocol + "//" + location.host;
+  var currentDir = baseUrl + location.pathname.replace(/\/[^\/]*$/, "/");
+
+	// convert each url(...)
+	/*
+	This regular expression is just a way to recursively match brackets within
+	a string.
+
+	 /url\s*\(  = Match on the word "url" with any whitespace after it and then a parens
+	   (  = Start a capturing group
+	     (?:  = Start a non-capturing group
+	         [^)(]  = Match anything that isn't a parentheses
+	         |  = OR
+	         \(  = Match a start parentheses
+	             (?:  = Start another non-capturing groups
+	                 [^)(]+  = Match anything that isn't a parentheses
+	                 |  = OR
+	                 \(  = Match a start parentheses
+	                     [^)(]*  = Match anything that isn't a parentheses
+	                 \)  = Match a end parentheses
+	             )  = End Group
+              *\) = Match anything and then a close parens
+          )  = Close non-capturing group
+          *  = Match anything
+       )  = Close capturing group
+	 \)  = Match a close parens
+
+	 /gi  = Get all matches, not the first.  Be case insensitive.
+	 */
+	var fixedCss = css.replace(/url\s*\(((?:[^)(]|\((?:[^)(]+|\([^)(]*\))*\))*)\)/gi, function(fullMatch, origUrl) {
+		// strip quotes (if they exist)
+		var unquotedOrigUrl = origUrl
+			.trim()
+			.replace(/^"(.*)"$/, function(o, $1){ return $1; })
+			.replace(/^'(.*)'$/, function(o, $1){ return $1; });
+
+		// already a full url? no change
+		if (/^(#|data:|http:\/\/|https:\/\/|file:\/\/\/)/i.test(unquotedOrigUrl)) {
+		  return fullMatch;
+		}
+
+		// convert the url to a full url
+		var newUrl;
+
+		if (unquotedOrigUrl.indexOf("//") === 0) {
+		  	//TODO: should we add protocol?
+			newUrl = unquotedOrigUrl;
+		} else if (unquotedOrigUrl.indexOf("/") === 0) {
+			// path should be relative to the base url
+			newUrl = baseUrl + unquotedOrigUrl; // already starts with '/'
+		} else {
+			// path should be relative to current directory
+			newUrl = currentDir + unquotedOrigUrl.replace(/^\.\//, ""); // Strip leading './'
+		}
+
+		// send back the fixed url(...)
+		return "url(" + JSON.stringify(newUrl) + ")";
+	});
+
+	// send back the fixed css
+	return fixedCss;
+};
+
+
+/***/ }),
+/* 123 */
 /***/ (function(module, exports) {
 
 module.exports = function(module) {
@@ -16019,7 +16629,7 @@ module.exports = function(module) {
 
 
 /***/ }),
-/* 119 */
+/* 124 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var map = {
@@ -16268,22 +16878,22 @@ webpackContext.keys = function webpackContextKeys() {
 };
 webpackContext.resolve = webpackContextResolve;
 module.exports = webpackContext;
-webpackContext.id = 119;
+webpackContext.id = 124;
 
 /***/ }),
-/* 120 */
+/* 125 */
 /***/ (function(module, exports) {
 
 module.exports = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/PjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+PHN2ZyB0PSIxNDk4NzA1MTQ0NjE1IiBjbGFzcz0iaWNvbiIgc3R5bGU9IiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjQ3NzciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCI+PGRlZnM+PHN0eWxlIHR5cGU9InRleHQvY3NzIj48L3N0eWxlPjwvZGVmcz48cGF0aCBkPSJNODk4Ljk2Njc3OSA0NDAuMDkzODExTDI2MS4zNjA1NCAyOS42OTQ2NTRDMTIwLjg0ODEzNy02MC43MTQ0MTUgMTI2LjE3NDE0MiA4NC4xNDY3OTIgMTI2LjE3NDE0MiA4NC4xNDY3OTJ2ODUzLjY3MDE1M3MtMi41MjIzMDYgMTM3Ljk5MDA5NyAxMTYuNjE0NDQ4IDYxLjMyMzI0N2w2NjAuOTQ2NTI1LTQyNS40NjY0ODJjMC4wNzE2MjcgMCAxMDUuNzUyNjcyLTYyLjQ0MzcwNC00Ljc2ODMzNi0xMzMuNTc5ODk5eiIgcC1pZD0iNDc3OCIgY2xhc3M9InNlbGVjdGVkIiBmaWxsPSIjZmZmZmZmIj48L3BhdGg+PC9zdmc+"
 
 /***/ }),
-/* 121 */
+/* 126 */
 /***/ (function(module, exports) {
 
 module.exports = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/PjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+PHN2ZyB0PSIxNDk4NzA3NTMyNTY2IiBjbGFzcz0iaWNvbiIgc3R5bGU9IiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjExNDc2IiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiPjxkZWZzPjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+PC9zdHlsZT48L2RlZnM+PHBhdGggZD0iTTc2OCAxNjB2NzA0YzAgMTcuOTItMTQuMDggMzItMzIgMzJzLTMyLTE0LjA4LTMyLTMydi03MDRjMC0xNy45MiAxNC4wOC0zMiAzMi0zMnMzMiAxNC4wOCAzMiAzMnpNMjg4IDEyOGMtMTcuOTIgMC0zMiAxNC4wOC0zMiAzMnY3MDRjMCAxNy45MiAxNC4wOCAzMiAzMiAzMnMzMi0xNC4wOCAzMi0zMnYtNzA0YzAtMTcuOTItMTQuMDgtMzItMzItMzJ6IiBmaWxsPSIjZmZmZmZmIiBwLWlkPSIxMTQ3NyIgY2xhc3M9InNlbGVjdGVkIj48L3BhdGg+PC9zdmc+"
 
 /***/ }),
-/* 122 */
+/* 127 */
 /***/ (function(module, exports) {
 
 module.exports = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/PjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+PHN2ZyB0PSIxNDk4NzA3NDY3MDk1IiBjbGFzcz0iaWNvbiIgc3R5bGU9IiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9Ijg2OTAiIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCI+PGRlZnM+PHN0eWxlIHR5cGU9InRleHQvY3NzIj48L3N0eWxlPjwvZGVmcz48cGF0aCBkPSJNODQxLjk1NTU1NiA2MTQuNzc5MjU5Yy05LjEwMjIyMiAwLTE2LjQwMjk2MyA0LjU1MTExMS0xNi40MDI5NjMgMTAuMDUwMzdsMCAxNzYuOTI0NDQ0TDU2NS45NDk2MyA1NDIuMTUxMTExYy02LjgyNjY2Ny02LjgyNjY2Ny0xNy45Mi02LjgyNjY2Ny0yNC43NDY2NjcgMC02LjgyNjY2NyA2LjgyNjY2Ny02LjgyNjY2NyAxNy45MiAwIDI0Ljc0NjY2N2wyNTkuNjAyOTYzIDI1OS42MDI5NjNMNjIzLjg4MTQ4MSA4MjYuNTAwNzQxYy01LjU5NDA3NCAwLTEwLjA1MDM3IDcuMzk1NTU2LTEwLjA1MDM3IDE2LjQwMjk2MyAwIDkuMTAyMjIyIDQuNTUxMTExIDE2LjQwMjk2MyAxMC4wNTAzNyAxNi40MDI5NjNsMjI0LjIzNzAzNyAwYzEuNzA2NjY3IDAgMy4zMTg1MTktMC42NjM3MDQgNC43NDA3NDEtMS44OTYyOTYgMS4yMzI1OTMtMS4xMzc3NzggMi40NjUxODUtMi4yNzU1NTYgMy42MDI5NjMtMy42MDI5NjMgMS4yMzI1OTMtMS40MjIyMjIgMS44OTYyOTYtMy4wMzQwNzQgMS44OTYyOTYtNC43NDA3NDFMODU4LjM1ODUxOSA2MjQuOTI0NDQ0Qzg1OC4zNTg1MTkgNjE5LjMzMDM3IDg1MS4wNTc3NzggNjE0Ljc3OTI1OSA4NDEuOTU1NTU2IDYxNC43NzkyNTl6IiBwLWlkPSI4NjkxIiBjbGFzcz0ic2VsZWN0ZWQiIGZpbGw9IiNmZmZmZmYiPjwvcGF0aD48cGF0aCBkPSJNMTkyLjE4OTYzIDQwNS40MjgxNDhjOS4xMDIyMjIgMCAxNi40MDI5NjMtNC41NTExMTEgMTYuNDAyOTYzLTEwLjA1MDM3bDAtMTc2LjkyNDQ0NCAyNTkuNjAyOTYzIDI1OS42MDI5NjNjNi44MjY2NjcgNi44MjY2NjcgMTcuOTIgNi44MjY2NjcgMjQuNzQ2NjY3IDAgNi44MjY2NjctNi44MjY2NjcgNi44MjY2NjctMTcuOTIgMC0yNC43NDY2NjdMMjMzLjQzNDA3NCAxOTMuNzA2NjY3bDE3Ni45MjQ0NDQgMGM1LjU5NDA3NCAwIDEwLjA1MDM3LTcuMzk1NTU2IDEwLjA1MDM3LTE2LjQwMjk2MyAwLTkuMTAyMjIyLTQuNTUxMTExLTE2LjQwMjk2My0xMC4wNTAzNy0xNi40MDI5NjNsLTIyNC4yMzcwMzcgMGMtMS43MDY2NjcgMC0zLjMxODUxOSAwLjY2MzcwNC00Ljc0MDc0MSAxLjg5NjI5Ni0xLjIzMjU5MyAxLjEzNzc3OC0yLjQ2NTE4NSAyLjI3NTU1Ni0zLjYwMjk2MyAzLjYwMjk2My0xLjIzMjU5MyAxLjQyMjIyMi0xLjg5NjI5NiAzLjAzNDA3NC0xLjg5NjI5NiA0Ljc0MDc0MWwwIDIyNC4yMzcwMzdDMTc1Ljc4NjY2NyA0MDAuOTcxODUyIDE4My4xODIyMjIgNDA1LjQyODE0OCAxOTIuMTg5NjMgNDA1LjQyODE0OHoiIHAtaWQ9Ijg2OTIiIGNsYXNzPSJzZWxlY3RlZCIgZmlsbD0iI2ZmZmZmZiI+PC9wYXRoPjwvc3ZnPg=="
