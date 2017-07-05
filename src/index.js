@@ -177,7 +177,8 @@ export default class VVideo {
   set controlsVisible (value) {
     this.controls.style.opacity = value
     if(value == 1) {
-      setTimeout(() => {
+      clearTimeout(this.timeout)
+      this.timeout = setTimeout(() => {
         this.controls.style.opacity = 0
       }, 6000)
     }
@@ -255,11 +256,11 @@ export default class VVideo {
 
     this.video.className = 'video'
     this.video.onfullscreenchange = this.screenchange
-    // this.video.addEventListener('click', (e) => {
-    //   if(this.playButtonVisible == 0) {
-    //     this.controlsVisible = 1
-    //   }
-    // })
+    this.video.addEventListener('click', (e) => {
+      if(this.playButtonVisible == 0) {
+        this.controlsVisible = 1
+      }
+    })
     setAttributes(this.video, {
       // poster,
       src,
