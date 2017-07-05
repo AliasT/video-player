@@ -66,7 +66,7 @@ export default class VVideo {
     this.pauseButton = document.createElement('img')
     this.pauseButton.src = pause
     this.pauseButton.className = 'video-pause-control'
-
+    this.playButtonVisible = 1
 
     this.timeStatus = document.createElement('div')
     this.timeStatus.className = 'video-status'
